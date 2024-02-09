@@ -1,0 +1,52 @@
+.mainbody{
+    background-color: cornflowerblue;
+}
+
+.dashboardbody{
+ background-color: lightcoral;
+}
+
+.expansionsbody{
+    background-color: cadetblue;
+}
+
+.cardsbody{
+    background-color: darkkhaki;
+}
+
+.newuserbody{
+    background-color: rgb(168, 215, 255);
+}
+
+.btn-custom{
+    background-color: rgb(100, 163, 142);
+    color: #977777;
+    &:hover {
+        background-color: rgb(100, 148, 132);
+    }
+}
+
+.accounticon{
+    width: 16px;
+    height: 16px;
+}
+
+.accdropdown{
+justify-content: space-between;
+}
+
+.accountcreationcontainer{
+    max-width: 80%;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+
+
+
+
+
+
+
+
+
