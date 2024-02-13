@@ -1,10 +1,11 @@
-const { error } = require("console");
+//const { error } = require("console");
 
 const express = require("express");
-const mysql = require('mysql2');
+const connection = require("./connection");
 const path = require("path");
 const app = express();
 const PORT = 3000;
+
 
 
 app.set("view engine", "ejs");
@@ -14,7 +15,10 @@ app.use(express.static(path.join(__dirname,`./public`)));
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
 
-
+ //listening on the port set above
+app.listen(PORT, () => {
+  console.log(`listening on port ${PORT}`);
+});
 
 //gets the path to the index.html homepage
 app.get("/", (req, res) => {
@@ -41,40 +45,16 @@ app.get("/signin", (req, res) => {
   res.render("signin");
 });
 
-
-
-//listening on the port set above
-app.listen(PORT, () => {
-    console.log(`listening on port ${PORT}`);
+app.get("/newusererr", (req, res) => {
+  res.render("newusererr");
 });
-
-
-
 
 
 //-----------------SQL----------------------------------
 
-//creating the connection between database and site
-const connection = mysql.createConnection({ 
-    host: '127.0.0.1',
-    user: 'root',
-    password: '',
-    database: 'pokedex'
-});
-
-//checking the connection and returning a throwing either a bed error to the console or a good connection message
-connection.connect((err) => {
-    if(err){
-        console.error("cannot connect to database");
-        return;
-    }else{
-        console.log("connection to database successful");
-    }
-});
-
 
 //adding a new user to the database while checking for preexisting emails
-app.post('/submit', (req, res) => {
+app.post('/submit', async (req, res) => {
     const {user_name, firstname, lastname, email, password, dob, address, phone} = req.body;
   
     // Check if the user already exists
@@ -85,7 +65,7 @@ app.post('/submit', (req, res) => {
       }
   
       if (results.length > 0) {
-        return res.status(400).json({ error: 'User already exists' });
+        return res.redirect('/newusererr');
       }
   
       // If user does not exist, insert the new user
@@ -96,11 +76,15 @@ app.post('/submit', (req, res) => {
           console.error(error);
           return res.status(500).json({ error: 'Internal Server Error' });
         }
-  
-        res.redirect('/'); // Redirect to a success page or handle as needed
+        
+        res.redirect("/signin");
+        
+ 
       });
     });
   });
+
+ 
 
 
 
