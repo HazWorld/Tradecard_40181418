@@ -2,10 +2,11 @@ const mysql = require('mysql2');
 
 //creating the connection between database and site
 const db = mysql.createConnection({ 
-    host: '127.0.0.1',
+    host: 'localhost',
+    port: '3306',
     user: 'root',
-    password: '',
-    database: 'pokedex'
+    password: 'root',
+    database: '40181418'
 });
 
 //checking the connection and returning a throwing either a bad error to the console or a good connection message

@@ -4,6 +4,7 @@ const express = require("express");
 const connection = require("./connection");
 const path = require("path");
 const app = express();
+let axios = require('axios');
 const PORT = 3000;
 
 
@@ -29,8 +30,23 @@ app.get("/dashboard", (req, res) => {
     res.render("dashboard");
 });
 
-app.get("/cards", (req, res) => {
-  res.render("cards");
+app.get("/cards",async (req, res) => {
+
+  let showBaseCards = 'https://api.tcgdex.net/v2/en/sets/base1';
+
+  axios.get(showBaseCards).then(result => {
+
+    console.log(result.data);
+    
+    let rows = result.data.cards;
+
+    res.render("cards", {baseCards : rows});
+
+  });
+
+  
+
+
 });
 
 app.get("/expansions", (req, res) => {
@@ -42,13 +58,9 @@ app.get("/newuser", (req, res) => {
 });
 
 app.get("/signin", (req, res) => {
+
   res.render("signin");
 });
-
-app.get("/newusererr", (req, res) => {
-  res.render("newusererr");
-});
-
 
 //-----------------SQL----------------------------------
 
@@ -65,7 +77,7 @@ app.post('/submit', async (req, res) => {
       }
   
       if (results.length > 0) {
-        return res.redirect('/newusererr');
+        return res.send('user already exists');
       }
   
       // If user does not exist, insert the new user
@@ -83,6 +95,7 @@ app.post('/submit', async (req, res) => {
       });
     });
   });
+
 
  
 

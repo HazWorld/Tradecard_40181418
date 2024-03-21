@@ -17,6 +17,32 @@
 <body class="cardsbody">
 
     <%- include('partials/navbar') %>
+    <h2>Base Cards</h2>
+
+    <div class="grid-container">
+
+        <% baseCards.forEach(row => { %>
+
+          <div class="card">
+
+            <div class="card-content">
+
+              <code><%= row.name %></code>
+
+              <img src="<%= row.image %>/high.png" alt="">
+
+            </div>
+
+          </div>
+
+        <% }); %>
+
+      </div>
+
+      <footer>
+        Tradecard, the pokedex visualizer
+      </footer>
+      
 
 </body>
 

@@ -11,7 +11,7 @@
 }
 
 .cardsbody{
-    background-color: darkkhaki;
+    background-color: rgb(162, 226, 228);
 }
 
 .newuserbody{
@@ -57,9 +57,29 @@ footer{
     width: 20px;
 }
 
-.newusererr{
-    background-color: red;
-}
+.grid-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); /* Adjust the minmax values as needed */
+    gap: 20px; /* Adjust the gap between items */
+    margin: 5%;
+  }
+  
+  .card {
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  
+  .card-content {
+    padding: 10px;
+  }
+  
+  .card img {
+    width: 100%;
+    height: auto;
+  }
+  
+
 
 
 
