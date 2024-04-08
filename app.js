@@ -11,6 +11,7 @@ const PORT = 3000;
 
 const halfDay = 1000*60*60*12;
 
+
 app.set("view engine", "ejs");
 
 app.use(express.static(path.join(__dirname,`./public`)));
@@ -35,8 +36,6 @@ app.listen(PORT, () => {
 
 
 
-
-//gets the path to the index.html homepage
 app.get("/", (req, res) => {
     res.render("index");
 });
@@ -47,7 +46,7 @@ app.get("/dashboard", (req, res) => {
   if(req.session.user){
 
     const user_name = req.session.user.user_name;
-    
+
     res.render("dashboard", {user_name});
   } else {
     res.redirect("/login")
@@ -70,10 +69,34 @@ app.get("/cards",async (req, res) => {
 
   });
 
+});
+
+
+  app.get("/viewcard/:cardId",async (req, res) => {
+
+    const cardId = req.params.cardId;
+
+    let cardInfo = `https://api.tcgdex.net/v2/en/cards/${cardId}`;
+
+
+    const result = await axios.get(cardInfo);
+
+    let cardData = result.data;
+
+      console.log(result.data);
+
+      
+  
+      res.render("viewcard", {card : cardData});
+ 
+
+
+  });
+
   
 
 
-});
+
 
 app.get("/expansions", (req, res) => {
   res.render("expansions");
@@ -91,14 +114,15 @@ app.get("/login", (req, res) => {
 
 
 
-//-----------------SQL----------------------------------
+//-----------------SQL Queries----------------------------------
 
 
 //adding a new user to the database while checking for preexisting emails
 app.post('/submit', async (req, res) => {
     const {user_name, firstname, lastname, email, password, dob, address, phone} = req.body;
+    
   
-    // Check if the user already exists
+    //checking if user exists
     connection.query('SELECT * FROM user WHERE email_address = ?', [email], (error, results) => {
       if (error) {
         console.error(error);
@@ -109,13 +133,14 @@ app.post('/submit', async (req, res) => {
         return res.send('user already exists');
       }
   
-      // If user does not exist, insert the new user
-      const sql = 'INSERT INTO user (user_name, first_name, last_name, email_address, password, date_of_birth, address, phone_number) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
+      //insert new user into datbase
+      
       const values = [user_name, firstname, lastname, email, password, dob, address, phone];
-      connection.query(sql, values, (error) => {
+
+      connection.query('INSERT INTO user (user_name, first_name, last_name, email_address, password, date_of_birth, address, phone_number) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', values, (error) => {
         if (error) {
           console.error(error);
-          return res.status(500).json({ error: 'Internal Server Error' });
+          return res.status(500).json({ error: 'Problem with server. help :(' });
         }
         
         res.redirect("/login");
@@ -126,6 +151,8 @@ app.post('/submit', async (req, res) => {
   });
 
 
+
+  //signs in users
   app.post('/signin', async (req,res) => {
 
     const {user_name, password } = req.body;
@@ -145,6 +172,24 @@ app.post('/submit', async (req, res) => {
       req.session.user = results[0];
       res.redirect("/dashboard");
     });
+
+  });
+
+
+  app.get('/logout', (req, res)=>{
+
+    req.session.destroy((err) => {
+
+        if(err){
+          console.error(err);
+          return res.status(500).json({error: 'Problem with server. help :('});
+        }
+
+      res.redirect('/');
+
+    });
+    
+    
 
   });
 
