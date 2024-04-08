@@ -4,10 +4,12 @@ const express = require("express");
 const connection = require("./connection");
 const path = require("path");
 const app = express();
+const cookieParser = require('cookie-parser')
+const session = require('express-session')
 let axios = require('axios');
 const PORT = 3000;
 
-
+const halfDay = 1000*60*60*12;
 
 app.set("view engine", "ejs");
 
@@ -16,19 +18,43 @@ app.use(express.static(path.join(__dirname,`./public`)));
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
 
+app.use(session({
+
+  secret: "mysecretkey",
+  saveUninitialized: true,
+  cookie: { maxAge: halfDay},
+  resave: false
+
+}));
+
+
  //listening on the port set above
 app.listen(PORT, () => {
   console.log(`listening on port ${PORT}`);
 });
+
+
+
 
 //gets the path to the index.html homepage
 app.get("/", (req, res) => {
     res.render("index");
 });
 
+
+
 app.get("/dashboard", (req, res) => {
-    res.render("dashboard");
+  if(req.session.user){
+
+    const user_name = req.session.user.user_name;
+    
+    res.render("dashboard", {user_name});
+  } else {
+    res.redirect("/login")
+  }
 });
+
+
 
 app.get("/cards",async (req, res) => {
 
@@ -57,10 +83,13 @@ app.get("/newuser", (req, res) => {
   res.render("newuser");
 });
 
-app.get("/signin", (req, res) => {
 
-  res.render("signin");
+app.get("/login", (req, res) => {
+
+  res.render("login");
 });
+
+
 
 //-----------------SQL----------------------------------
 
@@ -73,7 +102,7 @@ app.post('/submit', async (req, res) => {
     connection.query('SELECT * FROM user WHERE email_address = ?', [email], (error, results) => {
       if (error) {
         console.error(error);
-        return res.status(500).json({ error: 'Internal Server Error' });
+        return res.status(500).json({ error: 'Problem with server. help :(' });
       }
   
       if (results.length > 0) {
@@ -89,13 +118,35 @@ app.post('/submit', async (req, res) => {
           return res.status(500).json({ error: 'Internal Server Error' });
         }
         
-        res.redirect("/signin");
+        res.redirect("/login");
         
  
       });
     });
   });
 
+
+  app.post('/signin', async (req,res) => {
+
+    const {user_name, password } = req.body;
+
+    connection.query('SELECT * FROM user WHERE user_name = ? AND password = ?', [user_name, password], (error, results) => {
+
+      if (error) {
+          console.error(error);
+          return res.status(500).json({ error: 'Problem with server. help :(' });
+      }
+
+      if (results.length === 0) {
+          return res.send('Invalid username or password');
+      }
+
+      
+      req.session.user = results[0];
+      res.redirect("/dashboard");
+    });
+
+  });
 
  
 
