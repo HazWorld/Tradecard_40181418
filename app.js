@@ -37,25 +37,30 @@ app.listen(PORT, () => {
 
 
 app.get("/", (req, res) => {
-    res.render("index");
+    const user = req.session.user;
+    res.render("index", {user});
 });
 
 
 
 app.get("/dashboard", (req, res) => {
+
+  const user = req.session.user;
+
   if(req.session.user){
 
     const user_name = req.session.user.user_name;
 
-    res.render("dashboard", {user_name});
+    res.render("dashboard", {user_name, user});
   } else {
-    res.redirect("/login")
+    res.redirect("/login");
   }
 });
 
 
 
 app.get("/cards",async (req, res) => {
+  const user = req.session.user;
 
   let showBaseCards = 'https://api.tcgdex.net/v2/en/sets/base1';
 
@@ -65,7 +70,7 @@ app.get("/cards",async (req, res) => {
     
     let rows = result.data.cards;
 
-    res.render("cards", {baseCards : rows});
+    res.render("cards", {baseCards : rows, user});
 
   });
 
@@ -73,7 +78,7 @@ app.get("/cards",async (req, res) => {
 
 
   app.get("/viewcard/:cardId",async (req, res) => {
-
+    const user = req.session.user;
     const cardId = req.params.cardId;
 
     let cardInfo = `https://api.tcgdex.net/v2/en/cards/${cardId}`;
@@ -87,7 +92,7 @@ app.get("/cards",async (req, res) => {
 
       
   
-      res.render("viewcard", {card : cardData});
+      res.render("viewcard", {card : cardData, user});
  
 
 
@@ -99,17 +104,19 @@ app.get("/cards",async (req, res) => {
 
 
 app.get("/expansions", (req, res) => {
-  res.render("expansions");
+  const user = req.session.user;
+  res.render("expansions", {user});
 });
 
 app.get("/newuser", (req, res) => {
-  res.render("newuser");
+  const user = req.session.user;
+  res.render("newuser", {user});
 });
 
 
 app.get("/login", (req, res) => {
-
-  res.render("login");
+  const user = req.session.user;
+  res.render("login", {user});
 });
 
 

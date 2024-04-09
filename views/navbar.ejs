@@ -48,6 +48,7 @@
           </li>
         </ul>
 
+        
         <div class="ml-auto nav-item dropdown accountdropdown">
           <button class="btn btn-custom dropdown-toggle custombutton" type="button" data-bs-toggle="dropdown"
             aria-expanded="false">
@@ -56,10 +57,17 @@
           </button>
           <ul class="dropdown-menu dropdown-menu-end">
 
-            <li><a class="dropdown-item" aria-current="page" href="/login">Log in</a></li>
-            <li><a class="dropdown-item" href="/newuser">Sign up</a></li>
-            <li><a class="dropdown-item" href="/logout">Log Out</a></li>
-                        
+            <!-- this changes the dropdown depending on if a user is logged i or not -->
+            <% if (user) {%>
+              <li><a class="dropdown-item" href="/logout">Log Out</a></li>
+
+              <% } else { %>
+              
+              <li><a class="dropdown-item" href="/newuser">Sign up</a></li>
+              <li><a class="dropdown-item" aria-current="page" href="/login">Log in</a></li>
+              
+                <% } %>
+
           </ul>
         </div>
 
