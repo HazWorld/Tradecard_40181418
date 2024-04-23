@@ -73,11 +73,15 @@
             <label for="collectionName" class="form-label">Select Collection:</label>
 
             <select class="form-select" id="collectionName" name="collectionName">
-            <% collections.forEach(collection => { %>
+             <% if (collections && collections.length > 0) { %>
 
+                <% collections.forEach(collection => { %>
                 <option value="<%= collection.collection_name %>"><%= collection.collection_name %></option>
-            <% }); %>
-
+                <% }); %>
+                
+                <% } else { %>
+                    <option value="" disabled>No collections available</option>
+                <% } %>
 
             </select>
         </div>
