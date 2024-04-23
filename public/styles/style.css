@@ -89,7 +89,15 @@ footer{
   .spacer{
     margin-top: 10%;
   }
+
+  .main{
+    padding-top: 5%;
+    padding-bottom: 5%;
+  }
   
+  body{
+    padding-bottom: 5%;
+  }
 
 
 

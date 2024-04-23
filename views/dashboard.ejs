@@ -16,12 +16,39 @@
 
 <body class="dashboardbody">
 
-  <%- include('navbar') %>
+  <%- include('navbar')%>
 
   <div>
     <h1>Welcome <%= user_name %></h1>
   </div>
 
+  <div>
+    <div>
+      <form action="/createcollection" method="post">
+      <div>
+        <label for="collectionName">Collection name: </label>
+        <input type="text" class="form-control" name="collectionName" id="collectionName" placeholder="Enter a name for Collection" required>
+      </div>
+      <input type="hidden" name="userId" value="<%= user.id %>">
+      
+      <button type="submit" class="btn btn-primary">Create New Collection</button>
+      </form>
+    </div>
+
+    <div>
+      <% if(collections.length > 0) { %>
+        <ul>
+          <% collections.forEach(collection => { %>
+          <a href=""><%=  collection.collection_name %></a>
+          <% }); %>
+        </ul>
+
+      <% }else{ %>
+        <p>No Collections Made</p>
+      <% } %>
+    </div>
+  </div>
+
 </body>
 
-</html>
+</html> 

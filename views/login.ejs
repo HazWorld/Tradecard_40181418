@@ -22,13 +22,24 @@
 
     <%- include('navbar') %>
 
+    
     <div class="container-fluid accountcreationcontainer">
         <h1 class="display-4">
             Log In
         </h1>
     </div>
 
+
+
     <div class="container-fluid accountcreationcontainer">
+
+        <% if (error)  { %>
+
+            <div class="alert alert-danger" role = "alert">
+                <%= error %>
+            </div>
+    
+        <% } %>
 
             <form action="/signin" method="post">
 
@@ -47,10 +58,10 @@
             </form>
     </div>
 
-    <footer>
+</body>
+
+<footer>
         Tradecard, the pokedex visualizer
       </footer>
-    
-</body>
 
 </html>

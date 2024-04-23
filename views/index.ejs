@@ -20,8 +20,24 @@
 
 
 <body class="mainbody">
+  
 
   <%- include('navbar') %>
+
+  <div class="container-fluid accountcreationcontainer">
+
+    <form action="/indexsearch" method="GET">
+      <div class="display-6">
+        Search for a card
+      </div>
+      <div class="form-floating mb-3">
+        <input type="search" class="form-control" id="searchInput" name="searchInput" placeholder="Search">
+        <label for="searchInput">Pikachu</label>
+      </div>
+      <button type="submit" class="btn btn-secondary">Search</button>
+    </form>
+
+  </div>
 
 
   <footer>

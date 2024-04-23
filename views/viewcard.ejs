@@ -20,7 +20,8 @@
 <body class="cardsbody">
 
     <%- include('navbar') %>
-    
+
+    <div>
     <div class="container-fluid accountcreationcontainer">
         <h2 class=" display-4">
         Card Details
@@ -66,12 +67,31 @@
         <p>No card found.</p>
     <% } %>
 
+    <!-- adds cards  depending on  -->
+    <form class="container-fluid singlecard display-6 spacer" action="/addcard" method="post">
+        <div class="mb-3">
+            <label for="collectionName" class="form-label">Select Collection:</label>
+
+            <select class="form-select" id="collectionName" name="collectionName">
+            <% collections.forEach(collection => { %>
+
+                <option value="<%= collection.collection_name %>"><%= collection.collection_name %></option>
+            <% }); %>
+
+
+            </select>
+        </div>
+        <input type="hidden" name="cardId" value="<%= card.id %>">
+        <button type="submit" class="btn btn-primary">Add Card to Collection</button>
+    </form>
 
     
-    <footer>
-        Tradecard, the pokedex visualizer
-      </footer>
+    
+    </div>
 </body>
 
+<footer>
+        Tradecard, the pokedex visualizer
+</footer>
 
 </html>
