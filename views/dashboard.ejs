@@ -39,7 +39,7 @@
       <% if(collections.length > 0) { %>
         <ul>
           <% collections.forEach(collection => { %>
-          <a href=""><%=  collection.collection_name %></a>
+          <a href="/collections/<%= collection.collection_id %>" > <%= collection.collection_name %></a>
           <% }); %>
         </ul>
 

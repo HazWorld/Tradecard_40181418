@@ -41,7 +41,6 @@ app.get("/", (req, res) => {
   const user = req.session.user;
 
 
-
   res.render("index", { user });
 });
 
@@ -55,10 +54,11 @@ app.get("/dashboard", (req, res) => {
 
     const user_name = user.user_name;
 
-    connection.query(`SELECT collection.*
-    FROM collection
+    connection.query(`SELECT collection.* FROM collection
     JOIN user ON collection.user_id = user.user_id
-  WHERE user.user_name = '${user_name}';`, (error, collections) => {
+    WHERE user.user_name = '${user_name}';`, 
+  
+    (error, collections) => {
 
       if (error) {
         console.error("error getting collections", error);
@@ -112,7 +112,7 @@ app.get("/viewcard/:cardId", async (req, res) => {
       }
 
       console.log(result.data);
-      res.render("viewcard", { card: cardData, user, collections});
+      res.render("viewcard", { card: cardData, user, collections });
     }
   )
 
@@ -120,7 +120,45 @@ app.get("/viewcard/:cardId", async (req, res) => {
 
 });
 
+//shows celloection depending on what collection selected
+app.get("/collections/:collectionId", async (req, res) => {
+  const user = req.session.user;
 
+  
+  const collectionId = req.params.collectionId;
+  const userId = user.user_id;
+   
+
+  connection.query(
+    `SELECT collection_card.card_id FROM collection_card 
+    JOIN collection ON collection.collection_id = collection_card.collection_id 
+    WHERE collection.user_id = ${userId} AND collection.collection_id = ${collectionId};`, 
+    (error, cards) => {
+
+      if (error){
+        return res.status(500).json("Error fetching card IDs", error);
+      }
+
+      const cardIds = cards.map(card => card.card_id);
+
+      const cardDataPromises = cardIds.map(cardId => {
+
+        return axios.get(`https://api.tcgdex.net/v2/en/cards/${cardId}`);
+      });
+
+      Promise.all(cardDataPromises).then(cardDataResponses => {
+
+          const cardData = cardDataResponses.map(response => response.data);
+
+          
+          res.render("collections", { user, cardData });
+
+      });
+
+    });
+
+  
+});
 
 
 
@@ -316,9 +354,9 @@ app.get('/indexsearch', async (req, res) => {
         if (error) {
           console.error("cannot get collecitons", error);
         }
-  
+
         console.log(result.data);
-        res.render("viewcard", { card: cardData, user, collections});
+        res.render("viewcard", { card: cardData, user, collections });
       }
     )
 

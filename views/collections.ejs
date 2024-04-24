@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tradecard</title>
+    <link rel="icon"
+        href="https://user-images.githubusercontent.com/63087888/87461299-8582b900-c60e-11ea-82ff-7a27a51859d0.png"
+        type="image/x-icon">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <link rel="stylesheet" href="/styles/style.css">
+</head>
+
+<body class="dashboardbody">
+
+
+    <%- include('navbar') %>
+
+        <div class="container-fluid">
+
+            <h1>Collections</h1>
+
+            <div class="grid-container">
+                <% if (cardData && cardData.length> 0) { %>
+
+                    <% cardData.forEach(card=> { %>
+
+                        <div class="card">
+                            <div class="card-content">
+                                <a href="/viewcard/<%= card.id %>"><img src="<%= card.image%>/high.png"
+                                        alt="<%= card.name %>"></a>
+                                <code><%= card.name %></code>
+
+                                <p>
+                                    <%= card.text %>
+                                </p>
+
+                            </div>
+                        </div>
+                        <% }); %>
+                            <% } else { %>
+                                <p>No cards found</p>
+                            <% } %>
+            </div>
+
+            <footer>
+                Tradecard, the pokedex visualizer
+            </footer>
+</body>
+
+
+
+</html>
