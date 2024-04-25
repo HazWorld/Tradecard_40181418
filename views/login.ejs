@@ -22,46 +22,58 @@
 
     <%- include('navbar') %>
 
-    
-    <div class="container-fluid accountcreationcontainer">
-        <h1 class="display-4">
-            Log In
-        </h1>
-    </div>
+
+        <div class="container-fluid accountcreationcontainer">
+            <h1 class="display-4">
+                Log In
+            </h1>
+        </div>
 
 
 
-    <div class="container-fluid accountcreationcontainer">
+        <div class="container-fluid accountcreationcontainer">
 
-        <% if (error)  { %>
+            <% if (error) { %>
 
-            <div class="alert alert-danger" role = "alert">
-                <%= error %>
-            </div>
-    
-        <% } %>
-
-            <form action="/signin" method="post">
-
-                <div class="form-floating mb-3">
-                    <input type="text" class="form-control" id="user_name" name="user_name" placeholder="user_name" required>
-                    <label for="user_name">Username</label>
+                <div class="alert alert-danger" role="alert">
+                    <%= error %>
                 </div>
 
-                <div class="form-floating mb-3">
-                    <input type="text" class="form-control" id="password" name="password" placeholder="password" required>
-                    <label for="password">Password</label>
-                </div>
-                
-                <button type="submit" class="btn btn-primary">Sign In</button>
+                <% } %>
 
-            </form>
-    </div>
+                    <form action="/signin" method="post">
+
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control" id="user_name" name="user_name"
+                                placeholder="user_name" required>
+                            <label for="user_name">Username</label>
+                        </div>
+
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control" id="password" name="password" placeholder="password"
+                                required>
+                            <label for="password">Password</label>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">Sign In</button>
+
+                    </form>
+
+                    <div class="createaccount">
+
+                        <p>
+                            No Account? <a href="/newuser">Create One</a>
+                        </p>
+
+                    </div>
+        </div>
+
+
 
 </body>
 
 <footer>
-        Tradecard, the pokedex visualizer
-      </footer>
+    Tradecard, the pokedex visualizer
+</footer>
 
 </html>

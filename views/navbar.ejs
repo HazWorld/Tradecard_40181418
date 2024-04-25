@@ -31,21 +31,25 @@
             <a class="nav-link" href="/dashboard">Dashboard</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="/expansions">Expansions</a>
+            <a class="nav-link" href="/sets">Sets</a>
           </li>
+          
+
           <li class="nav-item">
-            <a class="nav-link" href="/cards">Cards</a>
+            <form class="row align-items-center g-3" action="/indexsearch" method="GET">
+          
+              <div class="col-auto">
+                <label for="searchInput" class="visually-hidden"> Card Search</label>
+                <input type="search" class="form-control" id="searchInput" name="searchInput" placeholder="Card Search">
+              </div>
+          
+              <div class="col-auto">
+                <button type="submit" class="btn btn-primary">Search</button>
+              </div>
+          
+            </form>
           </li>
-          <li class="nav-item dropdown" class="navdropdownalign">
-            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-              More
-            </a>
-            <ul class="dropdown-menu">
-              <li><a class="dropdown-item" href="#">Action</a></li>
-              <li><a class="dropdown-item" href="#">Another action</a></li>
-              <li><a class="dropdown-item" href="#">Something else here</a></li>
-            </ul>
-          </li>
+
         </ul>
 
         
@@ -57,7 +61,7 @@
           </button>
           <ul class="dropdown-menu dropdown-menu-end">
 
-            <!-- this changes the dropdown depending on if a user is logged i or not -->
+            
             <% if (user) {%>
               <li><a class="dropdown-item" href="/logout">Log Out</a></li>
 

@@ -21,30 +21,32 @@
     <%- include('navbar') %>
 
         <div class="container-fluid">
+            <h1 class="mt-5">Collections</h1>
 
-            <h1>Collections</h1>
-
-            <div class="grid-container">
+            <div class="row row-cols-1 row-cols-md-3 g-4">
                 <% if (cardData && cardData.length> 0) { %>
-
                     <% cardData.forEach(card=> { %>
-
-                        <div class="card">
-                            <div class="card-content">
-                                <a href="/viewcard/<%= card.id %>"><img src="<%= card.image%>/high.png"
-                                        alt="<%= card.name %>"></a>
-                                <code><%= card.name %></code>
-
-                                <p>
-                                    <%= card.text %>
-                                </p>
-
+                        <div class="col">
+                            <div class="card h-100">
+                                <a href="/viewcard/<%= card.id %>">
+                                    <img src="<%= card.image %>/high.png" class="card-img-top" alt="<%= card.name %>">
+                                </a>
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        <%= card.name %>
+                                    </h5>
+                                    <p class="card-text">
+                                        <%= card.text %>
+                                    </p>
+                                </div>
                             </div>
                         </div>
                         <% }); %>
                             <% } else { %>
-                                <p>No cards found</p>
-                            <% } %>
+                                <div class="col">
+                                    <p>No cards found</p>
+                                </div>
+                                <% } %>
             </div>
 
             <footer>

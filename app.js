@@ -75,10 +75,11 @@ app.get("/dashboard", (req, res) => {
 
 
 //shows cards from base1
-app.get("/cards", async (req, res) => {
+app.get("/cards/:baseId", async (req, res) => {
   const user = req.session.user;
+  const baseId = req.params.baseId;
 
-  let showBaseCards = 'https://api.tcgdex.net/v2/en/sets/base1';
+  let showBaseCards = `https://api.tcgdex.net/v2/en/sets/${baseId}`;
 
   axios.get(showBaseCards).then(result => {
 
@@ -89,6 +90,20 @@ app.get("/cards", async (req, res) => {
     res.render("cards", { baseCards: rows, user });
 
   });
+
+});
+
+//shows sets
+app.get("/sets", async (req, res) => {
+  const user = req.session.user;
+
+  const showsets = 'https://api.tcgdex.net/v2/en/sets';
+
+  const setresponse = await axios.get(showsets);
+
+  const sets = setresponse.data;
+
+  res.render("sets", {sets: sets, user})
 
 });
 

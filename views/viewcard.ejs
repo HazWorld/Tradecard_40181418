@@ -39,6 +39,10 @@
                     <% if (card.rarity) { %>
                         <p>Rarity: <%= card.rarity %></p>
                     <% } %>
+
+                    <% if (card.types) {%>
+                        <p>Type: <%= card.types %></p>
+                    <% } %>
     
                     <% if (card.attacks && card.attacks.length > 0) { %>
                         
@@ -56,6 +60,26 @@
                         <p>No attacks available for this card.</p>
 
                     <% } %>
+
+                    <% if (card.abilities && card.abilities.length > 0) { %>
+                        
+                        <h5 class="spacer">Abilities:</h5>
+
+                        <% card.abilities.forEach(ability => { %>
+
+                            <strong><%= ability.name %></strong>
+                            <p>Type: <% ability.type %></p>
+                            <p >Effect: <%= ability.effect %></p>
+
+                        <% }); %>
+
+                    <% } else { %>
+
+                        <p>No abilities available for this card.</p>
+
+                    <% } %>
+
+
 
                 </div>
                 <div class="col-md-6">
