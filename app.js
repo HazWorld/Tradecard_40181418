@@ -41,7 +41,7 @@ app.get("/", (req, res) => {
   const user = req.session.user;
 
 
-  res.render("index", { user });
+  res.render("index", { user, users : null });
 });
 
 
@@ -49,9 +49,13 @@ app.get("/", (req, res) => {
 app.get("/dashboard", (req, res) => {
 
   const user = req.session.user;
+  
+  
+  if (!user) {
+    res.redirect("/login");
+  }
 
-  if (req.session.user) {
-
+  else{
     const user_name = user.user_name;
 
     connection.query(`SELECT collection.* FROM collection
@@ -65,13 +69,33 @@ app.get("/dashboard", (req, res) => {
         return res.status(500).json("error getting collections");
       }
 
-      res.render("dashboard", { user_name, user, collections });
+      res.render("dashboard", { user_name, user, collections});
     });
-  } else {
-    res.redirect("/login");
-  }
-
+}
 });
+
+//gets another members dashboard
+app.get("/viewmembers/:ownersusername", (req, res) => {
+  const user = req.session.user;
+  const owners_user_name = req.params.ownersusername;
+  
+  connection.query(
+    `SELECT collection.* FROM collection
+    JOIN user ON collection.user_id = user.user_id
+    WHERE user.user_name = ?;`,
+    [owners_user_name],
+    (error, collections) => {
+      if (error) {
+        console.error("Error getting collections", error);
+        return res.status(500).json("Error getting collections");
+      }
+      res.render("viewmembers", { owners_user_name, user, collections });
+    }
+  );
+});
+
+
+
 
 
 //shows cards from base1
@@ -141,13 +165,13 @@ app.get("/collections/:collectionId", async (req, res) => {
 
   
   const collectionId = req.params.collectionId;
-  const userId = user.user_id;
+  // const userId = user.user_id;
    
 
   connection.query(
     `SELECT collection_card.card_id FROM collection_card 
     JOIN collection ON collection.collection_id = collection_card.collection_id 
-    WHERE collection.user_id = ${userId} AND collection.collection_id = ${collectionId};`, 
+    WHERE collection.collection_id = ${collectionId};`, 
     (error, cards) => {
 
       if (error){
@@ -193,6 +217,8 @@ app.get("/login", (req, res) => {
   const user = req.session.user;
   res.render("login", { user, error: null });
 });
+
+
 
 
 
@@ -383,6 +409,31 @@ app.get('/indexsearch', async (req, res) => {
     res.redirect('/');
 
   }
+
+});
+
+
+ //members search bar
+app.get('/memberSearch', async (req,res) => {
+
+  const user = req.session.user;
+
+  let searchparameter = req.query.searchInput;
+
+
+  connection.query(`SELECT user_name FROM user
+  WHERE user_name LIKE '%${searchparameter}%';`, (error, result)=> {
+
+    if(error) {
+      console.error("search failed");
+    }
+    const users = result;
+    console.log(users);
+    
+
+    res.render("index", { user, users});
+
+  });
 
 });
 

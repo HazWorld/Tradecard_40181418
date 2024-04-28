@@ -14,25 +14,58 @@
     integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
   <link rel="stylesheet" href="styles/style.css">
 
-  
+
 
 </head>
 
 
 <body class="mainbody">
-  
+
 
   <%- include('navbar') %>
 
-  <div class="container-fluid accountcreationcontainer">
+    <div class="container-fluid accountcreationcontainer">
+
+      <p>Search for a users collection</p>
+
+      <form class="row align-items-center g-3" action="/memberSearch" method="GET">
+
+        <div class="col-auto">
+          <label for="searchInput" class="visually-hidden"> Member Search</label>
+          <input type="search" class="form-control" id="searchInput" name="searchInput" placeholder="Member Search">
+        </div>
+
+        <div class="col-auto">
+          <button type="submit" class="btn btn-primary">Search</button>
+        </div>
+
+      </form>
+
+      <div>
+        <p>Results</p>
+        <ul>
+          <% if (users && users.length) { %>
+            <% users.forEach(member => { %>
+
+              <li>
+                <p><a href="/viewmembers/<%= member.user_name %>"><%= member.user_name %></a></p>
+              </li>
+
+            <% }); %>
+
+          <% } else { %>
+
+            <li>No users found</li>
+          <% } %>
+        </ul>
+      </div>
+
+    </div>
 
 
-  </div>
-
-
-  <footer>
-    Tradecard, the pokedex visualizer
-  </footer>
+    <footer>
+      Tradecard, the pokedex visualizer
+    </footer>
 
 </body>
 

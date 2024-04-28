@@ -91,7 +91,9 @@
         <p>No card found.</p>
     <% } %>
 
-    <!-- adds cards  depending on  -->
+    
+    <% if(user){ %> 
+
     <form class="container-fluid singlecard display-6 spacer" action="/addcard" method="post">
         <div class="mb-3">
             <label for="collectionName" class="form-label">Select Collection:</label>
@@ -113,7 +115,7 @@
         <button type="submit" class="btn btn-primary">Add Card to Collection</button>
     </form>
 
-    
+    <% } %>
     
     </div>
 </body>
