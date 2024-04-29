@@ -13,13 +13,15 @@ const PORT = 3000;
 const halfDay = 1000 * 60 * 60 * 12;
 
 
+
+
 app.set("view engine", "ejs");
 
 app.use(express.static(path.join(__dirname, `./public`)));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
+app.use(cookieParser());
 app.use(session({
 
   secret: "mysecretkey",
@@ -41,7 +43,7 @@ app.get("/", (req, res) => {
   const user = req.session.user;
 
 
-  res.render("index", { user, users : null });
+  res.render("index", { user, users: null });
 });
 
 
@@ -49,50 +51,59 @@ app.get("/", (req, res) => {
 app.get("/dashboard", (req, res) => {
 
   const user = req.session.user;
-  
-  
+
+
   if (!user) {
     res.redirect("/login");
   }
 
-  else{
+  else {
     const user_name = user.user_name;
 
     connection.query(`SELECT collection.* FROM collection
     JOIN user ON collection.user_id = user.user_id
-    WHERE user.user_name = '${user_name}';`, 
-  
-    (error, collections) => {
+    WHERE user.user_name = '${user_name}';`,
 
-      if (error) {
-        console.error("error getting collections", error);
-        return res.status(500).json("error getting collections");
-      }
+      (error, collections) => {
 
-      res.render("dashboard", { user_name, user, collections});
-    });
-}
+        if (error) {
+          console.error("error getting collections", error);
+          return res.status(500).json("error getting collections");
+        }
+
+        res.render("dashboard", { user_name, user, collections });
+      });
+  }
 });
 
 //gets another members dashboard
 app.get("/viewmembers/:ownersusername", (req, res) => {
   const user = req.session.user;
+
   const owners_user_name = req.params.ownersusername;
-  
+
+
   connection.query(
-    `SELECT collection.* FROM collection
-    JOIN user ON collection.user_id = user.user_id
-    WHERE user.user_name = ?;`,
-    [owners_user_name],
+    `SELECT collection.*, COUNT(likes.collection_id) AS likeCount 
+     FROM collection
+     JOIN user ON collection.user_id = user.user_id
+     LEFT JOIN likes ON collection.collection_id = likes.collection_id
+     WHERE user.user_name = ?
+     GROUP BY collection.collection_id;`, [owners_user_name],
+
     (error, collections) => {
+
       if (error) {
         console.error("Error getting collections", error);
         return res.status(500).json("Error getting collections");
       }
+
+
       res.render("viewmembers", { owners_user_name, user, collections });
     }
   );
 });
+
 
 
 
@@ -127,7 +138,7 @@ app.get("/sets", async (req, res) => {
 
   const sets = setresponse.data;
 
-  res.render("sets", {sets: sets, user})
+  res.render("sets", { sets: sets, user })
 
 });
 
@@ -163,18 +174,18 @@ app.get("/viewcard/:cardId", async (req, res) => {
 app.get("/collections/:collectionId", async (req, res) => {
   const user = req.session.user;
 
-  
+
   const collectionId = req.params.collectionId;
   // const userId = user.user_id;
-   
+
 
   connection.query(
     `SELECT collection_card.card_id FROM collection_card 
     JOIN collection ON collection.collection_id = collection_card.collection_id 
-    WHERE collection.collection_id = ${collectionId};`, 
+    WHERE collection.collection_id = ${collectionId};`,
     (error, cards) => {
 
-      if (error){
+      if (error) {
         return res.status(500).json("Error fetching card IDs", error);
       }
 
@@ -187,17 +198,19 @@ app.get("/collections/:collectionId", async (req, res) => {
 
       Promise.all(cardDataPromises).then(cardDataResponses => {
 
-          const cardData = cardDataResponses.map(response => response.data);
+        const cardData = cardDataResponses.map(response => response.data);
 
-          
-          res.render("collections", { user, cardData });
+
+        res.render("collections", { user, cardData });
 
       });
 
     });
 
-  
+
 });
+
+
 
 
 
@@ -320,7 +333,6 @@ app.post('/createcollection', async (req, res) => {
 
 //adding a card to a collection
 app.post('/addcard', (req, res) => {
-  const user = req.session.user;
 
   const { cardId, collectionName } = req.body;
 
@@ -413,8 +425,8 @@ app.get('/indexsearch', async (req, res) => {
 });
 
 
- //members search bar
-app.get('/memberSearch', async (req,res) => {
+//members search bar
+app.get('/memberSearch', async (req, res) => {
 
   const user = req.session.user;
 
@@ -422,20 +434,79 @@ app.get('/memberSearch', async (req,res) => {
 
 
   connection.query(`SELECT user_name FROM user
-  WHERE user_name LIKE '%${searchparameter}%';`, (error, result)=> {
+  WHERE user_name LIKE '%${searchparameter}%';`, (error, result) => {
 
-    if(error) {
+    if (error) {
       console.error("search failed");
     }
     const users = result;
     console.log(users);
-    
 
-    res.render("index", { user, users});
+
+    res.render("index", { user, users });
 
   });
 
 });
 
 
+
+app.post("/like-collection/:collectionId", async (req, res) => {
+
+  const user = req.session.user;
+  const collectionId = req.params.collectionId;
+
+  const userId = user.user_id;
+
+  connection.query(
+    `SELECT * FROM likes WHERE user_id = ? AND collection_id = ?`,  [userId, collectionId],
+
+    (error, results) => {
+
+      if (error) {
+        
+        console.error("Error in check", error);
+      }
+
+      if (results.length > 0) {
+        console.error("Already liked collection");
+
+      }
+
+      connection.query(
+        `INSERT INTO likes (user_id, collection_id) VALUES (?, ?)`, [userId, collectionId],
+        (error) => {
+
+          if (error) {
+
+            console.error("Could not like collection", error);
+          }
+
+          connection.query(
+            `SELECT user.user_name FROM collection 
+             JOIN user ON collection.user_id = user.user_id
+             WHERE collection.collection_id = ?`, [collectionId],
+
+            (error, result) => {
+              if (error) {
+
+                console.error("cannot find username", error);
+
+              }
+
+              if (result.length === 0) {
+                console.error("cannot find owner");
+
+              }
+
+              const ownerUsername = result[0].user_name;
+
+              res.redirect(`/viewmembers/${ownerUsername}`);
+            }
+          );
+        }
+      );
+    }
+  );
+});
 
