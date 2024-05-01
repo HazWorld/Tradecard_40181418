@@ -37,7 +37,7 @@ app.listen(PORT, () => {
   console.log(`listening on port ${PORT}`);
 });
 
-app.get("/login",async (req, res) => {
+app.get("/login", async (req, res) => {
   const user = req.session.user;
   res.render("login", { user, error: null });
 });
@@ -52,7 +52,7 @@ app.get("/", async (req, res) => {
 
 
 
-app.get("/dashboard",async (req, res) => {
+app.get("/dashboard", async (req, res) => {
 
   const user = req.session.user;
 
@@ -148,30 +148,46 @@ app.get("/sets", async (req, res) => {
 });
 
 
+
 //shows celloection depending on what collection selected
 app.get("/collections/:collectionId", async (req, res) => {
 
-
+  const collectionId = req.params.collectionId;
   const user = req.session.user;
-  let userId = null; 
+  let userId = null;
+
+  let filtersql = "";
 
   if (user) {
     userId = user.user_id;
   }
 
-  const collectionId = req.params.collectionId;
+  if (req.query.filter) {
+    let filter = req.query.filter;
+
+    console.log(filter);
+
+    filtersql = `AND (type = '${filter}' OR rarity = '${filter}')`;
+
+  }
 
   connection.query(
     `SELECT collection_card.card_id FROM collection_card 
     JOIN collection ON collection.collection_id = collection_card.collection_id 
-    WHERE collection.collection_id = ${collectionId};`,
-
+    WHERE collection.collection_id = ${collectionId} ${filtersql};`,
     (error, cards) => {
+
       if (error) {
-        return res.status(500).json("Error fetching card IDs", error);
+        console.error("problem fetching data");
       }
 
-      const cardIds = cards.map(card => card.card_id);
+      let cardIds;
+
+      if (Array.isArray(cards)) {
+        cardIds = cards.map(card => card.card_id);
+      } else {
+        cardIds = [cards];
+      }
 
       const cardDataPromises = cardIds.map(cardId => {
         return axios.get(`https://api.tcgdex.net/v2/en/cards/${cardId}`);
@@ -179,7 +195,6 @@ app.get("/collections/:collectionId", async (req, res) => {
 
       connection.query(
         `SELECT user_id FROM collection WHERE collection_id = ${collectionId};`,
-
         (error, userResult) => {
           if (error) {
             console.log("error getting data", error);
@@ -194,11 +209,10 @@ app.get("/collections/:collectionId", async (req, res) => {
           Promise.all(cardDataPromises)
             .then(cardDataResponses => {
               const cardData = cardDataResponses.map(response => response.data);
-              
               res.render("collections", { user, cardData, userId, collectionId, collectionUserId });
             })
             .catch(error => {
-              res.status(500).json("error getting card data", error);
+              console.error("problem fetching data");
             });
         }
       );
@@ -238,12 +252,12 @@ app.get("/viewcard/:cardId", async (req, res) => {
 
 
 
-app.get("/expansions",async (req, res) => {
+app.get("/expansions", async (req, res) => {
   const user = req.session.user;
   res.render("expansions", { user });
 });
 
-app.get("/newuser",async (req, res) => {
+app.get("/newuser", async (req, res) => {
   const user = req.session.user;
   res.render("newuser", { user });
 });
@@ -267,33 +281,33 @@ app.post('/submit', async (req, res) => {
   const { user_name, firstname, lastname, email, password, dob, address, phone } = req.body;
 
 
-  connection.query('SELECT * FROM user WHERE email_address = ? OR user_name = ?', [email, user_name], 
+  connection.query('SELECT * FROM user WHERE email_address = ? OR user_name = ?', [email, user_name],
 
-  (error, results) => {
-    if (error) {
-      console.error(error);
-      return res.status(500).json({ error: 'Problem with server. help :(' });
-    }
-
-    if (results.length > 0) {
-      return res.send('user already exists');
-
-    }
-
-
-    const values = [user_name, firstname, lastname, email, password, dob, address, phone];
-
-    connection.query('INSERT INTO user (user_name, first_name, last_name, email_address, password, date_of_birth, address, phone_number) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', values, (error) => {
+    (error, results) => {
       if (error) {
         console.error(error);
         return res.status(500).json({ error: 'Problem with server. help :(' });
       }
 
-      res.redirect("/login");
+      if (results.length > 0) {
+        return res.send('user already exists');
+
+      }
 
 
+      const values = [user_name, firstname, lastname, email, password, dob, address, phone];
+
+      connection.query('INSERT INTO user (user_name, first_name, last_name, email_address, password, date_of_birth, address, phone_number) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', values, (error) => {
+        if (error) {
+          console.error(error);
+          return res.status(500).json({ error: 'Problem with server. help :(' });
+        }
+
+        res.redirect("/login");
+
+
+      });
     });
-  });
 });
 
 
@@ -310,16 +324,18 @@ app.post('/updateaccount', async (req, res) => {
   const { user_name, firstname, lastname, email, dob, address, phone } = req.body;
 
 
-  connection.query('UPDATE user SET user_name = ?, first_name = ?, last_name = ?, email_address = ?, date_of_birth = ?, address = ?, phone_number = ? WHERE user_id = ?', 
-                  [user_name, firstname, lastname, email, dob, address, phone, user_id], 
-                  (error, results) => {
-    if (error) {
-      console.error(error);
-      return res.status(500).json({ error: 'Problem with server. help :(' });
-    }
+  connection.query('UPDATE user SET user_name = ?, first_name = ?, last_name = ?, email_address = ?, date_of_birth = ?, address = ?, phone_number = ? WHERE user_id = ?',
+    [user_name, firstname, lastname, email, dob, address, phone, user_id],
 
-    res.redirect("/");
-  });
+    (error, results) => {
+      
+      if (error) {
+        console.error(error);
+        return res.status(500).json({ error: 'Problem with server. help :(' });
+      }
+
+      res.redirect("/");
+    });
 });
 
 
@@ -333,28 +349,28 @@ app.post('/deleteaccount', async (req, res) => {
   const { delete_username, delete_password } = req.body;
 
 
-  connection.query('SELECT * FROM user WHERE user_name = ? AND password = ?', [delete_username, delete_password], 
+  connection.query('SELECT * FROM user WHERE user_name = ? AND password = ?', [delete_username, delete_password],
 
-  (error, results) => {
-    if (error) {
-
-      console.error(error);
-      return res.status(500).json({ error: 'Problem with server. help :(' });
-    }
-
-    if (results.length === 0) {
-      return res.send('incorrect username or password');
-    }
-
-    connection.query('DELETE FROM user WHERE user_id = ?', [user_id], (error) => {
+    (error, results) => {
       if (error) {
+
         console.error(error);
         return res.status(500).json({ error: 'Problem with server. help :(' });
       }
 
-      res.redirect("/");
+      if (results.length === 0) {
+        return res.send('incorrect username or password');
+      }
+
+      connection.query('DELETE FROM user WHERE user_id = ?', [user_id], (error) => {
+        if (error) {
+          console.error(error);
+          return res.status(500).json({ error: 'Problem with server. help :(' });
+        }
+
+        res.redirect("/");
+      });
     });
-  });
 });
 
 
@@ -420,7 +436,7 @@ app.post('/createcollection', async (req, res) => {
 //adding a card to a collection
 app.post('/addcard', (req, res) => {
 
-  const { cardId, collectionName } = req.body;
+  const { cardId, collectionName, rarity, type } = req.body;
 
 
 
@@ -437,7 +453,7 @@ app.post('/addcard', (req, res) => {
 
       const collection_id = results[0].collection_id;
 
-      connection.query('INSERT INTO collection_card (card_id, collection_id) VALUES (?,?)', [cardId, collection_id], (error, results) => {
+      connection.query('INSERT INTO collection_card (card_id, collection_id, rarity, type) VALUES (?,?,?,?)', [cardId, collection_id, rarity, type], (error, results) => {
         if (error) {
           console.error(error);
           return res.status(500).json({ error: 'Problem with server. help :(' });
@@ -456,7 +472,7 @@ app.post('/deletecard/:collectionId/:cardId', (req, res) => {
   const { collectionId, cardId } = req.params;
 
   connection.query(
-    `DELETE FROM collection_card WHERE collection_id = ? AND card_id = ?`, 
+    `DELETE FROM collection_card WHERE collection_id = ? AND card_id = ?`,
 
     [collectionId, cardId],
     (error) => {
@@ -565,7 +581,7 @@ app.post("/like-collection/:collectionId", async (req, res) => {
   const userId = user.user_id;
 
   connection.query(
-    `SELECT * FROM likes WHERE user_id = ? AND collection_id = ?`,  [userId, collectionId],
+    `SELECT * FROM likes WHERE user_id = ? AND collection_id = ?`, [userId, collectionId],
 
     (error, results) => {
 

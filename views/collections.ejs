@@ -23,7 +23,60 @@
         <div class="container-fluid">
             <h1 class="mt-5">Collections</h1>
 
-            <div class="row row-cols-1 row-cols-md-3 g-4">
+            <div>
+                <form action="/collections/<%= collectionId %>" method="GET">
+
+                    <label for="filter">Filter by Rarity:</label>
+
+                    <select name="filter" id="filter">
+
+                      <option value="">All</option>
+                      <option value="common">Common</option>
+                      <option value="uncommon">Uncommon</option>
+                      <option value="rare">Rare</option>
+                      <option value="double rare">Double rare</option>
+                      <option value="Ultra Rare">Ultra Rare</option>
+                      <option value="Secret Rare">Secret Rare</option>
+                      <option value="Promo">Promo</option>
+                      
+                      
+
+                    </select>
+
+                    <button type="submit">Filter</button>
+                  </form>
+
+            </div>
+            <div>
+                <form action="/collections/<%= collectionId %>" method="GET">
+
+                    <label for="filter">Filter by Type:</label>
+
+                    <select name="filter" id="filter">
+
+                      <option value="">All</option>
+
+                      <option value="Fire">Fire</option>
+                      <option value="Dragon">Dragon</option>
+                      <option value="Lightning">Lightning</option>
+                      <option value="Grass">Grass</option>
+                      <option value="Water">Water</option>
+                      <option value="Fairy">Fairy</option>
+                      <option value="Psychic">Psychic</option>
+                      <option value="Darkness">Darkness</option>
+                      <option value="Metal">Metal</option>
+                      <option value="Colorless">Colorless</option>
+
+
+
+                    </select>
+
+                    <button type="submit">Filter</button>
+                  </form>
+
+            </div>
+
+            <div class="row row-cols-1 row-cols-md-3 g-4 ">
                 <% if (cardData && cardData.length> 0) { %>
                     <% cardData.forEach(card=> { %>
                         <div class="col">
