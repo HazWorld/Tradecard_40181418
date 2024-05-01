@@ -37,9 +37,13 @@ app.listen(PORT, () => {
   console.log(`listening on port ${PORT}`);
 });
 
+app.get("/login",async (req, res) => {
+  const user = req.session.user;
+  res.render("login", { user, error: null });
+});
 
 
-app.get("/", (req, res) => {
+app.get("/", async (req, res) => {
   const user = req.session.user;
 
 
@@ -48,7 +52,7 @@ app.get("/", (req, res) => {
 
 
 
-app.get("/dashboard", (req, res) => {
+app.get("/dashboard",async (req, res) => {
 
   const user = req.session.user;
 
@@ -75,6 +79,7 @@ app.get("/dashboard", (req, res) => {
       });
   }
 });
+
 
 //gets another members dashboard
 app.get("/viewmembers/:ownersusername", (req, res) => {
@@ -143,6 +148,66 @@ app.get("/sets", async (req, res) => {
 });
 
 
+//shows celloection depending on what collection selected
+app.get("/collections/:collectionId", async (req, res) => {
+
+
+  const user = req.session.user;
+  let userId = null; 
+
+  if (user) {
+    userId = user.user_id;
+  }
+
+  const collectionId = req.params.collectionId;
+
+  connection.query(
+    `SELECT collection_card.card_id FROM collection_card 
+    JOIN collection ON collection.collection_id = collection_card.collection_id 
+    WHERE collection.collection_id = ${collectionId};`,
+
+    (error, cards) => {
+      if (error) {
+        return res.status(500).json("Error fetching card IDs", error);
+      }
+
+      const cardIds = cards.map(card => card.card_id);
+
+      const cardDataPromises = cardIds.map(cardId => {
+        return axios.get(`https://api.tcgdex.net/v2/en/cards/${cardId}`);
+      });
+
+      connection.query(
+        `SELECT user_id FROM collection WHERE collection_id = ${collectionId};`,
+
+        (error, userResult) => {
+          if (error) {
+            console.log("error getting data", error);
+          }
+
+          if (userResult.length === 0) {
+            console.log("no data retrieved", error);
+          }
+
+          const collectionUserId = userResult[0].user_id;
+
+          Promise.all(cardDataPromises)
+            .then(cardDataResponses => {
+              const cardData = cardDataResponses.map(response => response.data);
+              
+              res.render("collections", { user, cardData, userId, collectionId, collectionUserId });
+            })
+            .catch(error => {
+              res.status(500).json("error getting card data", error);
+            });
+        }
+      );
+    }
+  );
+});
+
+
+
 app.get("/viewcard/:cardId", async (req, res) => {
   const user = req.session.user;
   const cardId = req.params.cardId;
@@ -170,65 +235,24 @@ app.get("/viewcard/:cardId", async (req, res) => {
 
 });
 
-//shows celloection depending on what collection selected
-app.get("/collections/:collectionId", async (req, res) => {
-  const user = req.session.user;
-
-
-  const collectionId = req.params.collectionId;
-  // const userId = user.user_id;
-
-
-  connection.query(
-    `SELECT collection_card.card_id FROM collection_card 
-    JOIN collection ON collection.collection_id = collection_card.collection_id 
-    WHERE collection.collection_id = ${collectionId};`,
-    (error, cards) => {
-
-      if (error) {
-        return res.status(500).json("Error fetching card IDs", error);
-      }
-
-      const cardIds = cards.map(card => card.card_id);
-
-      const cardDataPromises = cardIds.map(cardId => {
-
-        return axios.get(`https://api.tcgdex.net/v2/en/cards/${cardId}`);
-      });
-
-      Promise.all(cardDataPromises).then(cardDataResponses => {
-
-        const cardData = cardDataResponses.map(response => response.data);
-
-
-        res.render("collections", { user, cardData });
-
-      });
-
-    });
-
-
-});
 
 
 
-
-
-
-app.get("/expansions", (req, res) => {
+app.get("/expansions",async (req, res) => {
   const user = req.session.user;
   res.render("expansions", { user });
 });
 
-app.get("/newuser", (req, res) => {
+app.get("/newuser",async (req, res) => {
   const user = req.session.user;
   res.render("newuser", { user });
 });
 
 
-app.get("/login", (req, res) => {
+
+app.get("/accountsettings", async (req, res) => {
   const user = req.session.user;
-  res.render("login", { user, error: null });
+  res.render("accountsettings", { user });
 });
 
 
@@ -238,13 +262,14 @@ app.get("/login", (req, res) => {
 //-----------------SQL Queries----------------------------------
 
 
-//adding a new user to the database while checking for preexisting emails
+//creates account checking for username and email
 app.post('/submit', async (req, res) => {
   const { user_name, firstname, lastname, email, password, dob, address, phone } = req.body;
 
 
-  //checking if user exists
-  connection.query('SELECT * FROM user WHERE email_address = ?', [email], (error, results) => {
+  connection.query('SELECT * FROM user WHERE email_address = ? OR user_name = ?', [email, user_name], 
+
+  (error, results) => {
     if (error) {
       console.error(error);
       return res.status(500).json({ error: 'Problem with server. help :(' });
@@ -255,7 +280,7 @@ app.post('/submit', async (req, res) => {
 
     }
 
-    //insert new user into datbase
+
     const values = [user_name, firstname, lastname, email, password, dob, address, phone];
 
     connection.query('INSERT INTO user (user_name, first_name, last_name, email_address, password, date_of_birth, address, phone_number) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', values, (error) => {
@@ -267,6 +292,67 @@ app.post('/submit', async (req, res) => {
       res.redirect("/login");
 
 
+    });
+  });
+});
+
+
+
+//updates account
+app.post('/updateaccount', async (req, res) => {
+
+  const user = req.session.user;
+
+  let user_id = user.user_id;
+
+  console.log(user_id);
+
+  const { user_name, firstname, lastname, email, dob, address, phone } = req.body;
+
+
+  connection.query('UPDATE user SET user_name = ?, first_name = ?, last_name = ?, email_address = ?, date_of_birth = ?, address = ?, phone_number = ? WHERE user_id = ?', 
+                  [user_name, firstname, lastname, email, dob, address, phone, user_id], 
+                  (error, results) => {
+    if (error) {
+      console.error(error);
+      return res.status(500).json({ error: 'Problem with server. help :(' });
+    }
+
+    res.redirect("/");
+  });
+});
+
+
+
+//deletes account
+app.post('/deleteaccount', async (req, res) => {
+
+  const user = req.session.user;
+  let user_id = user.user_id;
+
+  const { delete_username, delete_password } = req.body;
+
+
+  connection.query('SELECT * FROM user WHERE user_name = ? AND password = ?', [delete_username, delete_password], 
+
+  (error, results) => {
+    if (error) {
+
+      console.error(error);
+      return res.status(500).json({ error: 'Problem with server. help :(' });
+    }
+
+    if (results.length === 0) {
+      return res.send('incorrect username or password');
+    }
+
+    connection.query('DELETE FROM user WHERE user_id = ?', [user_id], (error) => {
+      if (error) {
+        console.error(error);
+        return res.status(500).json({ error: 'Problem with server. help :(' });
+      }
+
+      res.redirect("/");
     });
   });
 });
@@ -364,6 +450,26 @@ app.post('/addcard', (req, res) => {
 
   );
 });
+
+
+app.post('/deletecard/:collectionId/:cardId', (req, res) => {
+  const { collectionId, cardId } = req.params;
+
+  connection.query(
+    `DELETE FROM collection_card WHERE collection_id = ? AND card_id = ?`, 
+
+    [collectionId, cardId],
+    (error) => {
+      if (error) {
+        console.error("problem deleting card", error);
+      }
+      return res.redirect("/dashboard");
+    }
+
+  );
+});
+
+
 
 
 //logs out user
@@ -464,7 +570,7 @@ app.post("/like-collection/:collectionId", async (req, res) => {
     (error, results) => {
 
       if (error) {
-        
+
         console.error("Error in check", error);
       }
 

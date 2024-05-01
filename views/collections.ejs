@@ -38,6 +38,15 @@
                                     <p class="card-text">
                                         <%= card.text %>
                                     </p>
+
+
+                                    <% if(userId === collectionUserId) {%>
+                                    <form action="/deletecard/<%= collectionId %>/<%= card.id %>" method="POST">
+                                        <button type="submit" class="btn btn-danger">Delete</button>
+                                    </form>
+                                    <% } %>
+
+                                      
                                 </div>
                             </div>
                         </div>
