@@ -7,6 +7,7 @@ const app = express();
 const cookieParser = require('cookie-parser')
 const session = require('express-session')
 const axios = require('axios');
+const bcrypt = require('bcrypt');
 
 const PORT = 3000;
 
@@ -32,7 +33,6 @@ app.use(session({
 }));
 
 
-//listening on the port set above
 app.listen(PORT, () => {
   console.log(`listening on port ${PORT}`);
 });
@@ -53,40 +53,54 @@ app.get("/", async (req, res) => {
 
 
 app.get("/dashboard", async (req, res) => {
-
   const user = req.session.user;
-
 
   if (!user) {
     res.redirect("/login");
-  }
-
-  else {
+  } else {
     const user_name = user.user_name;
 
-    connection.query(`SELECT collection.* FROM collection
-    JOIN user ON collection.user_id = user.user_id
-    WHERE user.user_name = '${user_name}';`,
+    connection.query(
+      `SELECT collection.*, 
+      GROUP_CONCAT(DISTINCT comment_content SEPARATOR '|||') AS comments,
+      COUNT(DISTINCT likes.user_id) AS likeCount
+      FROM collection
+      JOIN user ON collection.user_id = user.user_id
+      LEFT JOIN comment ON collection.collection_id = comment.collection_id
+      LEFT JOIN likes ON collection.collection_id = likes.collection_id
+      WHERE user.user_name = '${user_name}'
+      GROUP BY collection.collection_id;`,
 
-      (error, collections) => {
-
+      (error, results) => {
         if (error) {
           console.error("error getting collections", error);
           return res.status(500).json("error getting collections");
         }
 
+        const collections = results.map(row => {
+          return {
+            collection_id: row.collection_id,
+            collection_name: row.collection_name,
+            comments: row.comments ? row.comments.split('|||') : [],
+            likeCount: row.likeCount || 0
+          };
+        });
+
         res.render("dashboard", { user_name, user, collections });
-      });
+      }
+    );
   }
 });
+
+
 
 
 //gets another members dashboard
 app.get("/viewmembers/:ownersusername", (req, res) => {
   const user = req.session.user;
-
   const owners_user_name = req.params.ownersusername;
-
+  const errorMessage = req.session.error;
+  req.session.error = null;
 
   connection.query(
     `SELECT collection.*, COUNT(likes.collection_id) AS likeCount 
@@ -104,7 +118,7 @@ app.get("/viewmembers/:ownersusername", (req, res) => {
       }
 
 
-      res.render("viewmembers", { owners_user_name, user, collections });
+      res.render("viewmembers", { owners_user_name, user, collections, error: errorMessage });
     }
   );
 });
@@ -114,21 +128,16 @@ app.get("/viewmembers/:ownersusername", (req, res) => {
 
 
 
-//shows cards from base1
+//shows cards from the set requested
 app.get("/cards/:baseId", async (req, res) => {
   const user = req.session.user;
   const baseId = req.params.baseId;
 
   let showBaseCards = `https://api.tcgdex.net/v2/en/sets/${baseId}`;
-
-  axios.get(showBaseCards).then(result => {
-
+  await axios.get(showBaseCards).then(result => {
     console.log(result.data);
-
     let rows = result.data.cards;
-
     res.render("cards", { baseCards: rows, user });
-
   });
 
 });
@@ -136,13 +145,9 @@ app.get("/cards/:baseId", async (req, res) => {
 //shows sets
 app.get("/sets", async (req, res) => {
   const user = req.session.user;
-
   const showsets = 'https://api.tcgdex.net/v2/en/sets';
-
   const setresponse = await axios.get(showsets);
-
   const sets = setresponse.data;
-
   res.render("sets", { sets: sets, user })
 
 });
@@ -157,18 +162,13 @@ app.get("/collections/:collectionId", async (req, res) => {
   let userId = null;
 
   let filtersql = "";
-
   if (user) {
     userId = user.user_id;
   }
-
   if (req.query.filter) {
     let filter = req.query.filter;
-
     console.log(filter);
-
     filtersql = `AND (type = '${filter}' OR rarity = '${filter}')`;
-
   }
 
   connection.query(
@@ -181,13 +181,8 @@ app.get("/collections/:collectionId", async (req, res) => {
         console.error("problem fetching data");
       }
 
-      let cardIds;
+      let cardIds = cards.map(card => card.card_id);
 
-      if (Array.isArray(cards)) {
-        cardIds = cards.map(card => card.card_id);
-      } else {
-        cardIds = [cards];
-      }
 
       const cardDataPromises = cardIds.map(cardId => {
         return axios.get(`https://api.tcgdex.net/v2/en/cards/${cardId}`);
@@ -266,7 +261,7 @@ app.get("/newuser", async (req, res) => {
 
 app.get("/accountsettings", async (req, res) => {
   const user = req.session.user;
-  res.render("accountsettings", { user });
+  res.render("accountsettings", { user, error : null });
 });
 
 
@@ -277,38 +272,45 @@ app.get("/accountsettings", async (req, res) => {
 
 
 //creates account checking for username and email
+
 app.post('/submit', async (req, res) => {
   const { user_name, firstname, lastname, email, password, dob, address, phone } = req.body;
 
 
-  connection.query('SELECT * FROM user WHERE email_address = ? OR user_name = ?', [email, user_name],
+  const saltRounds = 10;
 
-    (error, results) => {
+  bcrypt.hash(password, saltRounds, (err, hashedPassword) => {
+    if (err) {
+      console.error(err);
+    }
+
+    connection.query('SELECT * FROM user WHERE email_address = ? OR user_name = ?', [email, user_name], (error, results) => {
       if (error) {
         console.error(error);
-        return res.status(500).json({ error: 'Problem with server. help :(' });
       }
 
       if (results.length > 0) {
-        return res.send('user already exists');
-
+        return res.send('User already exists');
       }
 
+      const values = [user_name, firstname, lastname, email, hashedPassword, dob, address, phone];
 
-      const values = [user_name, firstname, lastname, email, password, dob, address, phone];
+      connection.query(`INSERT INTO user (user_name, first_name, last_name, 
+        email_address, password, date_of_birth, address, phone_number) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, values,
 
-      connection.query('INSERT INTO user (user_name, first_name, last_name, email_address, password, date_of_birth, address, phone_number) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', values, (error) => {
-        if (error) {
-          console.error(error);
-          return res.status(500).json({ error: 'Problem with server. help :(' });
-        }
+        (error) => {
 
-        res.redirect("/login");
+          if (error) {
+            console.error(error);
+          }
 
-
-      });
+          res.redirect("/login");
+        });
     });
+  });
 });
+
 
 
 
@@ -321,14 +323,23 @@ app.post('/updateaccount', async (req, res) => {
 
   console.log(user_id);
 
-  const { user_name, firstname, lastname, email, dob, address, phone } = req.body;
+  const { firstname, lastname, dob, address, phone, password } = req.body;
 
 
-  connection.query('UPDATE user SET user_name = ?, first_name = ?, last_name = ?, email_address = ?, date_of_birth = ?, address = ?, phone_number = ? WHERE user_id = ?',
-    [user_name, firstname, lastname, email, dob, address, phone, user_id],
+  const isPasswordValid = await bcrypt.compare(password, user.password);
+
+  if (!isPasswordValid) {
+    return res.render('accountsettings', { error: 'Invalid username or password', user: null });
+  }
+
+
+  connection.query('UPDATE user SET first_name = ?, last_name = ?, date_of_birth = ?, address = ?, phone_number = ? WHERE user_id = ?',
+    [firstname, lastname, dob, address, phone, user_id],
 
     (error, results) => {
+
       
+
       if (error) {
         console.error(error);
         return res.status(500).json({ error: 'Problem with server. help :(' });
@@ -342,61 +353,56 @@ app.post('/updateaccount', async (req, res) => {
 
 //deletes account
 app.post('/deleteaccount', async (req, res) => {
+  const { delete_password } = req.body;
 
   const user = req.session.user;
-  let user_id = user.user_id;
 
-  const { delete_username, delete_password } = req.body;
+  const isPasswordValid = await bcrypt.compare(delete_password, user.password);
+
+  if (!isPasswordValid) {
+    return res.render('deleteaccount', { error: 'Invalid username or password' });
+  }
 
 
-  connection.query('SELECT * FROM user WHERE user_name = ? AND password = ?', [delete_username, delete_password],
+  connection.query('DELETE FROM user WHERE user_id = ?', [user.user_id], (error, results) => {
+    if (error) {
+      console.error(error);
+      return res.status(500).json({ error: 'Problem with server. help :(' });
+    }
 
-    (error, results) => {
-      if (error) {
-
-        console.error(error);
-        return res.status(500).json({ error: 'Problem with server. help :(' });
-      }
-
-      if (results.length === 0) {
-        return res.send('incorrect username or password');
-      }
-
-      connection.query('DELETE FROM user WHERE user_id = ?', [user_id], (error) => {
-        if (error) {
-          console.error(error);
-          return res.status(500).json({ error: 'Problem with server. help :(' });
-        }
-
-        res.redirect("/");
-      });
-    });
+    res.redirect("/");
+  });
 });
 
 
 
 //signs in users
 app.post('/signin', async (req, res) => {
-
   const { user_name, password } = req.body;
 
-  connection.query('SELECT * FROM user WHERE user_name = ? AND password = ?', [user_name, password], (error, results) => {
-
+  connection.query('SELECT * FROM user WHERE user_name = ?', [user_name], async (error, results) => {
     if (error) {
       console.error(error);
-      return res.status(500).json({ error: 'Problem with server. help :(' });
     }
 
     if (results.length === 0) {
       return res.render('login', { error: 'Invalid username or password', user: null });
     }
 
+    const user = results[0];
 
-    req.session.user = results[0];
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+
+    if (!isPasswordValid) {
+      return res.render('login', { error: 'Invalid username or password', user: null });
+    }
+
+    req.session.user = user;
     res.redirect("/dashboard");
   });
-
 });
+
+
 
 //creates a new collection
 app.post('/createcollection', async (req, res) => {
@@ -453,21 +459,22 @@ app.post('/addcard', (req, res) => {
 
       const collection_id = results[0].collection_id;
 
-      connection.query('INSERT INTO collection_card (card_id, collection_id, rarity, type) VALUES (?,?,?,?)', [cardId, collection_id, rarity, type], (error, results) => {
-        if (error) {
-          console.error(error);
-          return res.status(500).json({ error: 'Problem with server. help :(' });
-        }
+      connection.query('INSERT INTO collection_card (card_id, collection_id, rarity, type) VALUES (?,?,?,?)', [cardId, collection_id, rarity, type],
+        (error, results) => {
+          if (error) {
+            console.error(error);
+            return res.status(500).json({ error: 'Problem with server. help :(' });
+          }
 
-        return res.redirect('/dashboard');
+          return res.redirect('/dashboard');
 
-      });
+        });
     }
 
   );
 });
 
-
+//deletes the card from the collection
 app.post('/deletecard/:collectionId/:cardId', (req, res) => {
   const { collectionId, cardId } = req.params;
 
@@ -572,56 +579,52 @@ app.get('/memberSearch', async (req, res) => {
 });
 
 
-
+//likes a collection
 app.post("/like-collection/:collectionId", async (req, res) => {
-
   const user = req.session.user;
   const collectionId = req.params.collectionId;
-
   const userId = user.user_id;
 
   connection.query(
-    `SELECT * FROM likes WHERE user_id = ? AND collection_id = ?`, [userId, collectionId],
-
+    `SELECT * FROM likes WHERE user_id = ? AND collection_id = ?`,
+    [userId, collectionId],
     (error, results) => {
-
       if (error) {
-
         console.error("Error in check", error);
-      }
-
-      if (results.length > 0) {
-        console.error("Already liked collection");
-
+        return res.status(500).send("Internal Server Error");
       }
 
       connection.query(
-        `INSERT INTO likes (user_id, collection_id) VALUES (?, ?)`, [userId, collectionId],
-        (error) => {
-
+        `SELECT user.user_name FROM collection 
+         JOIN user ON collection.user_id = user.user_id
+         WHERE collection.collection_id = ?`,
+        [collectionId],
+        (error, result) => {
           if (error) {
+            console.error("cannot find username", error);
+            return res.status(500).send("Internal Server Error");
+          }
 
-            console.error("Could not like collection", error);
+          if (result.length === 0) {
+            console.error("cannot find owner");
+            return res.status(404).send("Owner not found");
+          }
+
+          const ownerUsername = result[0].user_name;
+
+          if (results.length > 0) {
+            req.session.error = 'Already liked this collection';
+            return res.redirect(`/viewmembers/${ownerUsername}`);
           }
 
           connection.query(
-            `SELECT user.user_name FROM collection 
-             JOIN user ON collection.user_id = user.user_id
-             WHERE collection.collection_id = ?`, [collectionId],
-
-            (error, result) => {
+            `INSERT INTO likes (user_id, collection_id) VALUES (?, ?)`,
+            [userId, collectionId],
+            (error) => {
               if (error) {
-
-                console.error("cannot find username", error);
-
+                console.error("Could not like collection", error);
+                return res.status(500).send("Internal Server Error");
               }
-
-              if (result.length === 0) {
-                console.error("cannot find owner");
-
-              }
-
-              const ownerUsername = result[0].user_name;
 
               res.redirect(`/viewmembers/${ownerUsername}`);
             }
@@ -631,4 +634,29 @@ app.post("/like-collection/:collectionId", async (req, res) => {
     }
   );
 });
+
+
+//comment on collections
+app.post("/comment/:collectionId", async (req, res) => {
+  const user = req.session.user;
+  const collectionId = req.params.collectionId;
+  const userId = user.user_id;
+  const commentContent = req.body.commentContent;
+
+
+  connection.query(
+    `INSERT INTO comment (user_id, collection_id, comment_content) VALUES (?, ?, ?)`,
+    [userId, collectionId, commentContent],
+    (error) => {
+      if (error) {
+        console.error("Could not add comment", error);
+        return res.status(500).send("Internal Server Error");
+      }
+
+      res.redirect(`/collections/${collectionId}`);
+    }
+  );
+});
+
+
 

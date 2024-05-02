@@ -21,13 +21,13 @@
     <div class="container mt-5">
 
       <h1 class="mb-4">Welcome <%= user_name %>
-      
+
       </h1>
 
       <div class="mb-4">
         <form action="/createcollection" method="post" class="row g-3">
           <div class="col-auto">
-            
+
             <input type="text" class="form-control" name="collectionName" id="collectionName"
               placeholder="Enter a name for Collection" required>
           </div>
@@ -39,7 +39,7 @@
         </form>
       </div>
 
-      
+
       <div>
         <% if(collections.length> 0) { %>
           <ul class="list-group">
@@ -48,6 +48,22 @@
                 <a href="/collections/<%= collection.collection_id %>" class="text-decoration-none">
                   <%= collection.collection_name %>
                 </a>
+
+                <span class="badge bg-secondary">
+                  <%= collection.likeCount %> Likes
+                </span>
+                
+                <% if (collection.comments.length> 0) { %>
+                  <ul>
+                    <% collection.comments.forEach(comment=> { %>
+                      <li>
+                        <%= comment %>
+                      </li>
+                      <% }); %>
+                  </ul>
+                  <% } else { %>
+                    <p>No comments</p>
+                    <% } %>
               </li>
               <% }); %>
           </ul>

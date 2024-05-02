@@ -20,8 +20,13 @@
 
     <div class="container mt-5">
 
-      
-      </h1>
+        <% if (error) { %>
+        <div class="alert alert-danger" role="alert">
+            
+                <%= error %>
+            
+        </div>
+        <% } %>
 
       
       <div>
@@ -41,6 +46,17 @@
                 <button type="submit" class="btn btn-primary" >Like</button>
                 </form>
                 <% } %>
+
+                <% if (user) { %>
+                    
+                    <form action="/comment/<%= collection.collection_id %>" method="POST">
+                      <div class="input-group mt-2">
+                        <textarea class="form-control" name="commentContent" placeholder="Write a comment..." required></textarea>
+                        <button class="btn btn-primary" type="submit">Comment</button>
+                      </div>
+                    </form>
+                    <% } %>
+
               </li>
               <% }); %>
           </ul>
