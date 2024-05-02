@@ -52,7 +52,12 @@
                 <span class="badge bg-secondary">
                   <%= collection.likeCount %> Likes
                 </span>
-                
+
+                <form action="/deletecollection" method="post" style="display:inline;">
+                  <input type="hidden" name="collection_id" value="<%= collection.collection_id %>">
+                  <button type="submit" class="btn btn-danger btn-sm ms-2">Delete</button>
+                </form>
+
                 <% if (collection.comments.length> 0) { %>
                   <ul>
                     <% collection.comments.forEach(comment=> { %>

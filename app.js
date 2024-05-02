@@ -1,4 +1,3 @@
-//const { error } = require("console");
 
 const express = require("express");
 const connection = require("./connection");
@@ -13,6 +12,11 @@ const PORT = 3000;
 
 const halfDay = 1000 * 60 * 60 * 12;
 
+
+//api stuff
+// const apiRoutes = require('./routes/api');
+
+// app.use('/api', apiRoutes);
 
 
 
@@ -384,19 +388,14 @@ app.post('/signin', async (req, res) => {
     if (error) {
       console.error(error);
     }
-
     if (results.length === 0) {
       return res.render('login', { error: 'Invalid username or password', user: null });
     }
-
     const user = results[0];
-
     const isPasswordValid = await bcrypt.compare(password, user.password);
-
     if (!isPasswordValid) {
       return res.render('login', { error: 'Invalid username or password', user: null });
     }
-
     req.session.user = user;
     res.redirect("/dashboard");
   });
@@ -477,10 +476,8 @@ app.post('/addcard', (req, res) => {
 //deletes the card from the collection
 app.post('/deletecard/:collectionId/:cardId', (req, res) => {
   const { collectionId, cardId } = req.params;
-
   connection.query(
     `DELETE FROM collection_card WHERE collection_id = ? AND card_id = ?`,
-
     [collectionId, cardId],
     (error) => {
       if (error) {
@@ -488,10 +485,28 @@ app.post('/deletecard/:collectionId/:cardId', (req, res) => {
       }
       return res.redirect("/dashboard");
     }
-
   );
 });
 
+//delete a collection
+app.post('/deletecollection', async (req, res) => {
+  const user = req.session.user;
+  const { collection_id } = req.body; 
+
+  const userId = user.user_id;
+
+  connection.query(
+    "DELETE FROM collection WHERE collection_id = ? AND user_id = ?",
+    [collection_id, userId],
+    (error, result) => {
+      if (error) {
+        console.error("error deleting collection", error);
+        
+      }
+      res.redirect('/dashboard');
+    }
+  );
+});
 
 
 
@@ -660,3 +675,4 @@ app.post("/comment/:collectionId", async (req, res) => {
 
 
 
+module.exports = app;
